@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>항공사 실적 분석 대시보드 | 항공사업팀</title>
+<!-- Simple password auth - no Google Cloud needed -->
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard','Inter',-apple-system,sans-serif;background:#F7F8FA;color:#222}
+select{font-family:inherit;padding:10px 14px;border-radius:8px;border:1.5px solid #D0D5DD;font-size:14px;font-weight:500;color:#1B2A4A;background:#FFF;min-width:220px;cursor:pointer;outline:none}
+select:focus{border-color:#0066FF}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#CCC;border-radius:3px}
+.wrap{max-width:1400px;margin:0 auto;padding:32px 48px;min-height:100vh}
+.tag{color:#0066FF;font-size:12px;font-weight:600;margin-bottom:4px}
+.line{width:44px;height:2.5px;background:#0066FF;margin-bottom:14px}
+h1{font-size:30px;color:#1B2A4A;font-weight:700;margin:0}
+.sub{color:#737373;font-size:14px;margin:6px 0 0}
+.filters{display:flex;gap:16px;margin:28px 0;flex-wrap:wrap}
+.flbl{font-size:11px;color:#888;font-weight:600;margin-bottom:4px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:28px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.kpi{background:#E8F2FF;border-radius:10px;padding:22px 26px}
+.kpi .kl{font-size:12px;color:#737373;font-weight:500;margin-bottom:6px}
+.kpi .kv{font-size:32px;color:#1B2A4A;font-weight:700;margin-bottom:6px}
+.kpi .ks{font-size:12px;font-weight:400;color:#737373}
+.kpi .ks.green{color:#009B3A;font-weight:600}
+.card{background:#FFF;border-radius:10px;border:1px solid #E0E0E0;padding:22px 26px}
+.ct{font-size:15px;color:#1B2A4A;font-weight:700;margin-bottom:2px}
+.cs{font-size:11px;color:#999;margin-bottom:16px}
+.chart-area{display:flex;align-items:flex-end;gap:8px;height:240px;padding:20px 0 0}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.chart-bar{width:100%;max-width:80px;border-radius:6px 6px 0 0;transition:height 0.4s ease;min-height:4px;cursor:pointer;position:relative}
+.chart-bar:hover{opacity:0.85}
+.chart-bar .bar-val{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;color:#1B2A4A;white-space:nowrap}
+.chart-label{font-size:13px;color:#555;font-weight:500}
+.route-item{display:flex;align-items:center;gap:12px;padding:8px;border-bottom:1px solid #F0F0F0;cursor:pointer;border-radius:6px;transition:background 0.15s}
+.route-item:hover{background:#F0F5FF}
+.route-item.active{background:#E8F2FF}
+.route-apt{font-weight:600;color:#1B2A4A;width:70px;font-size:13px;flex-shrink:0}
+.route-bar-bg{flex:1;background:#F0F0F0;border-radius:4px;height:22px;overflow:hidden}
+.route-bar-fill{height:22px;border-radius:4px;min-width:4px;transition:width 0.3s}
+.route-val{font-weight:600;color:#1B2A4A;font-size:12px;width:100px;text-align:right;flex-shrink:0}
+.route-pct{color:#999;font-size:11px;width:48px;text-align:right;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px}
+thead tr{background:#1B2A4A;color:#fff}
+th{padding:11px 16px;text-align:left;font-weight:600;font-size:12px}
+td{padding:11px 16px}
+.row-even{background:#F4F8FF}.row-odd{background:#FFF}
+.row-total{background:#1B2A4A;color:#fff;font-weight:700}
+.footer{text-align:center;color:#BBB;font-size:11px;margin-top:24px;padding-bottom:20px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.wrap{padding:20px 16px}}
+
+/* Auth overlay */
+#authOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(27,42,74,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#authOverlay .auth-box{background:#fff;border-radius:16px;padding:48px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+#authOverlay .auth-logo{font-size:28px;font-weight:700;color:#1B2A4A;margin-bottom:8px}
+#authOverlay .auth-sub{color:#737373;font-size:14px;margin-bottom:28px}
+#authOverlay .auth-error{color:#E53935;font-size:13px;margin-top:16px;display:none}
+#authOverlay .auth-info{color:#999;font-size:11px;margin-top:20px}
+
+/* Loading */
+#loadingOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#F7F8FA;z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.spinner{width:40px;height:40px;border:4px solid #E0E0E0;border-top:4px solid #0066FF;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadingOverlay .load-text{margin-top:16px;color:#737373;font-size:14px}
+
+/* Top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.topbar .user-info{display:flex;align-items:center;gap:10px}
+.topbar .user-info img{width:28px;height:28px;border-radius:50%}
+.topbar .user-info span{font-size:13px;color:#737373}
+.topbar .btn-logout{font-size:12px;color:#999;cursor:pointer;border:1px solid #DDD;border-radius:6px;padding:4px 12px;background:#fff}
+.topbar .btn-logout:hover{background:#F0F0F0}
+.topbar .btn-refresh{font-size:12px;color:#0066FF;cursor:pointer;border:1px solid #0066FF;border-radius:6px;padding:4px 12px;background:#fff;margin-right:8px}
+.topbar .btn-refresh:hover{background:#E8F2FF}
+.data-status{font-size:11px;color:#999;margin-bottom:20px}
+</style>
+</head>
+<body>
+
+<!-- Auth Overlay -->
+<div id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">항공사업팀 대시보드</div>
+    <div class="auth-sub">접근 비밀번호를 입력해 주세요</div>
+    <div style="margin-top:8px">
+      <input type="password" id="pwInput" placeholder="비밀번호 입력" style="font-family:inherit;padding:12px 16px;border-radius:8px;border:1.5px solid #D0D5DD;font-size:15px;width:100%;outline:none;margin-bottom:12px" onkeydown="if(event.key==='Enter')checkPw()">
+      <button onclick="checkPw()" style="font-family:inherit;width:100%;padding:12px;border:none;border-radius:8px;background:#0066FF;color:#fff;font-size:15px;font-weight:600;cursor:pointer">로그인</button>
+    </div>
+    <div class="auth-error" id="authError">비밀번호가 올바르지 않습니다.</div>
+    <div class="auth-info">마이리얼트립 항공사업팀 전용</div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display:none">
+  <div class="spinner"></div>
+  <div class="load-text">Google Sheets에서 데이터를 불러오는 중...</div>
+</div>
+
+<!-- Main Dashboard -->
+<div class="wrap" id="mainDashboard" style="display:none">
+  <div class="topbar">
+    <div></div>
+    <div class="user-info">
+      <button class="btn-refresh" onclick="refreshData()">↻ 새로고침</button>
+      <button class="btn-logout" onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="tag">항공사업팀 실적 대시보드</div>
+  <div class="line"></div>
+  <h1>항공사 실적 분석 대시보드</h1>
+  <p class="sub">2026년 1월~3월 발권 실적 현황 · ICN 출발 기준</p>
+  <div class="data-status" id="dataStatus"></div>
+
+  <div class="filters">
+    <div><div class="flbl">항공사</div><select id="selAirline"></select></div>
+    <div><div class="flbl">구간 (최종목적지)</div><select id="selDest"></select></div>
+    <div><div class="flbl">지표</div>
+      <select id="selMetric">
+        <option value="sales">Sales (발권금액)</option>
+        <option value="cnt">인원 (CNT)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid4" id="kpiGrid"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="ct" id="chartTitle">월별 SALES 추이</div>
+      <div class="cs" id="chartUnit">단위: 원</div>
+      <div class="chart-area" id="chartArea"></div>
+    </div>
+    <div class="card">
+      <div class="ct" id="routeTitle">VS 노선별 SALES</div>
+      <div class="cs">ICN 출발 · YTD 누적 · 클릭하여 필터</div>
+      <div style="max-height:260px;overflow-y:auto" id="routeList"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct" id="tableTitle">월별 상세 실적</div>
+    <div class="cs">발권 기준 · ICN 출발</div>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th>구분</th><th>SALES</th><th>NET</th><th>인원(CNT)</th><th>전월 대비</th><th>전체 점유율</th>
+    </tr></thead><tbody id="tableBody"></tbody></table></div>
+  </div>
+
+  <div class="footer">Data source: Google Sheets (Live) · 마이리얼트립 항공사업팀</div>
+</div>
+
+<script>
+// ==========================================
+// CONFIG - Simple Password Auth
+// ==========================================
+// 비밀번호를 변경하려면 아래 값을 수정하세요
+var ACCESS_PASSWORD = 'mrt2026';
+
+// ==========================================
+// CONFIG - Google Sheets IDs
+// ==========================================
+// 데이터를 가져올 Google Sheets (시트가 "링크가 있는 모든 사용자에게 공개"되어야 합니다)
+var SHEETS = {
+  // 기존 실적 데이터 시트 (예시 - 실제 시트 ID로 교체 필요)
+  main: '1ooAaZIdVrw1ch3a2V4abSZpJYCg5LEg2oPXJArvXLVg'
+};
+
+// ==========================================
+// DATA STORE
+// ==========================================
+var MONTHLY = {};
+var ROUTES = {};
+var MKT = {};
+var NAMES = {"KE":"\uB300\uD55C\uD56D\uACF5","OZ":"\uC544\uC2DC\uC544\uB098\uD56D\uACF5","7C":"\uC81C\uC8FC\uD56D\uACF5","TW":"\uD2F0\uC6E8\uC774\uD56D\uACF5","LJ":"\uC9C4\uC5D0\uC5B4","ZE":"\uC774\uC2A4\uD0C0\uD56D\uACF5","BX":"\uC5D0\uC5B4\uBD80\uC0B0","VJ":"\uBE44\uC5BF\uC82F\uD56D\uACF5","VN":"\uBCA0\uD2B8\uB0A8\uD56D\uACF5","CZ":"\uC911\uAD6D\uB0A8\uBC29\uD56D\uACF5","MU":"\uC911\uAD6D\uB3D9\uBC29\uD56D\uACF5","JL":"\uC77C\uBCF8\uD56D\uACF5","NH":"\uC804\uC77C\uBCF8\uACF5\uC218","SQ":"\uC2F1\uAC00\uD3EC\uB974\uD56D\uACF5","TK":"\uD130\uD0A4\uD56D\uACF5","EK":"\uC5D0\uBBF8\uB808\uC774\uD2B8\uD56D\uACF5","CX":"\uCE90\uC138\uC774\uD37C\uC2DC\uD53D","BR":"\uC5D0\uBC14\uD56D\uACF5","CI":"\uCC28\uC774\uB098\uC5D0\uC5B4\uB77C\uC778","TG":"\uD0C0\uC774\uD56D\uACF5","VS":"\uBC84\uC9C4 \uC544\uD2C0\uB780\uD2F1","BA":"\uBE0C\uB9AC\uD2F0\uC2DC\uD56D\uACF5","DL":"\uB378\uD0C0\uD56D\uACF5","AA":"\uC544\uBA54\uB9AC\uCE78\uD56D\uACF5","UA":"\uC720\uB098\uC774\uD2F0\uB4DC\uD56D\uACF5","GA":"\uAC00\uB8E8\uB2E4\uC778\uB3C4\uB124\uC2DC\uC544","HA":"\uD558\uC640\uC774\uC548\uD56D\uACF5","CA":"\uC911\uAD6D\uAD6D\uC81C\uD56D\uACF5","LH":"\uB8E8\uD504\uD2B8\uD55C\uC790","AF":"\uC5D0\uC5B4\uD504\uB791\uC2A4","MH":"\uB9D0\uB808\uC774\uC2DC\uC544\uD56D\uACF5","QR":"\uCE74\uD0C0\uB974\uD56D\uACF5","PR":"\uD544\uB9AC\uD540\uD56D\uACF5","MM":"\uD53C\uCE58\uD56D\uACF5","AC":"\uC5D0\uC5B4\uCE90\uB098\uB2E4","AI":"\uC5D0\uC5B4\uC778\uB514\uC544","5J":"\uC138\uBD80\uD37C\uC2DC\uD53D","ZH":"\uC120\uC804\uD56D\uACF5","8M":"\uBBF8\uC580\uB9C8\uD56D\uACF5","AY":"\uD540\uC5D0\uC5B4","SK":"SAS \uC2A4\uCE78\uB514\uB098\uBE44\uC544","EY":"\uC5D0\uD2F0\uD558\uB4DC\uD56D\uACF5","YP":"\uC5D0\uC5B4\uD504\uB808\uBBF8\uC544","RS":"\uC5D0\uC5B4\uC11C\uC6B8","WE":"\uD0C0\uC774\uC2A4\uB9C8\uC77C","LO":"LOT\uD3F4\uB780\uB4DC\uD56D\uACF5","HX":"\uD64D\uCF69\uD56D\uACF5","NX":"\uC5D0\uC5B4\uB9C8\uCE74\uC624","KC":"\uC5D0\uC5B4\uC544\uC2A4\uD0C0\uB098","OM":"\uBABD\uACE8\uD56D\uACF5","SC":"\uC0B0\uB3D9\uD56D\uACF5","AM":"\uC544\uC5D0\uB85C\uBA55\uC2DC\uCF54","WS":"\uC6E8\uC2A4\uD2B8\uC82F","QV":"\uB77C\uC624\uD56D\uACF5","QF":"\uCE7C\uD0C0\uC2A4\uD56D\uACF5","KL":"KLM\uB124\uB35C\uB780\uB4DC","NZ":"\uB274\uC9C8\uB79C\uB4DC\uD56D\uACF5","OD":"\uBC14\uD2F1\uC5D0\uC5B4","UL":"\uC2A4\uB9AC\uB791\uCE74\uD56D\uACF5","VZ":"\uD0C0\uC774\uBE44\uC5BF\uC82F"};
+
+// Fallback embedded data (used when Sheets API fails)
+var FALLBACK_MONTHLY={"3U":{"3":{"sales":363300,"cnt":1,"net":348300}},"5J":{"1":{"sales":312199100,"cnt":928,"net":192530800},"2":{"sales":467934000,"cnt":1438,"net":281077400},"3":{"sales":739664200,"cnt":2062,"net":455325100}},"7C":{"1":{"sales":17555850730,"cnt":44557,"net":13313285460},"2":{"sales":12988714670,"cnt":33653,"net":10216179890},"3":{"sales":9172134400,"cnt":23148,"net":7076641600}},"8M":{"1":{"sales":175321700,"cnt":237,"net":136228000},"2":{"sales":146076700,"cnt":212,"net":116352400},"3":{"sales":164438400,"cnt":246,"net":129744100}},"AA":{"1":{"sales":107014600,"cnt":79,"net":89555500},"2":{"sales":52123800,"cnt":45,"net":44137400},"3":{"sales":39120300,"cnt":44,"net":30965600}},"AC":{"1":{"sales":791206200,"cnt":669,"net":568195000},"2":{"sales":1004564100,"cnt":776,"net":809998600},"3":{"sales":434710500,"cnt":315,"net":346624400}},"AF":{"1":{"sales":146818400,"cnt":91,"net":101414400},"2":{"sales":68544500,"cnt":51,"net":47557900},"3":{"sales":225852500,"cnt":62,"net":0}},"AI":{"1":{"sales":57700600,"cnt":27,"net":0},"2":{"sales":124103300,"cnt":58,"net":0},"3":{"sales":113791000,"cnt":46,"net":0}},"BA":{"1":{"sales":10968000,"cnt":32,"net":0},"2":{"sales":8054800,"cnt":24,"net":0},"3":{"sales":5202800,"cnt":13,"net":0}},"BR":{"1":{"sales":412279400,"cnt":793,"net":307050900},"2":{"sales":435612700,"cnt":776,"net":333161800},"3":{"sales":389082800,"cnt":999,"net":270111800}},"BX":{"1":{"sales":3478744900,"cnt":8023,"net":0},"2":{"sales":2597254400,"cnt":6035,"net":0},"3":{"sales":2046296200,"cnt":5070,"net":0}},"CA":{"1":{"sales":685461200,"cnt":2052,"net":0},"2":{"sales":607843000,"cnt":1804,"net":0},"3":{"sales":602527800,"cnt":1838,"net":0}},"CI":{"1":{"sales":1154178600,"cnt":2534,"net":0},"2":{"sales":1059804800,"cnt":2188,"net":0},"3":{"sales":554979000,"cnt":1203,"net":0}},"CX":{"1":{"sales":1176069400,"cnt":1161,"net":0},"2":{"sales":816697200,"cnt":755,"net":0},"3":{"sales":590027100,"cnt":561,"net":0}},"CZ":{"1":{"sales":6734899100,"cnt":18923,"net":0},"2":{"sales":4478974100,"cnt":13099,"net":0},"3":{"sales":3610499800,"cnt":10468,"net":0}},"DL":{"1":{"sales":205600300,"cnt":147,"net":0},"2":{"sales":169416400,"cnt":112,"net":0},"3":{"sales":57966600,"cnt":43,"net":0}},"EK":{"1":{"sales":1193440100,"cnt":692,"net":0},"2":{"sales":1062757700,"cnt":641,"net":0},"3":{"sales":530660100,"cnt":336,"net":0}},"GA":{"1":{"sales":413453300,"cnt":694,"net":0},"2":{"sales":379773900,"cnt":563,"net":0},"3":{"sales":262068900,"cnt":401,"net":0}},"HA":{"1":{"sales":1055561300,"cnt":1131,"net":0},"2":{"sales":1027282900,"cnt":1003,"net":0},"3":{"sales":486750600,"cnt":619,"net":0}},"JL":{"1":{"sales":3233413800,"cnt":5478,"net":0},"2":{"sales":2577889000,"cnt":4260,"net":0},"3":{"sales":1927755700,"cnt":3611,"net":0}},"KE":{"1":{"sales":15015010900,"cnt":19370,"net":12332624300},"2":{"sales":9809986100,"cnt":11993,"net":8335840300},"3":{"sales":9848033100,"cnt":15228,"net":8229547100}},"LH":{"1":{"sales":362866800,"cnt":178,"net":0},"2":{"sales":261478600,"cnt":135,"net":0},"3":{"sales":134457400,"cnt":65,"net":0}},"LJ":{"1":{"sales":16139135600,"cnt":36936,"net":0},"2":{"sales":10933552700,"cnt":27053,"net":0},"3":{"sales":9400771300,"cnt":22242,"net":0}},"MH":{"1":{"sales":469113600,"cnt":645,"net":0},"2":{"sales":303849400,"cnt":443,"net":0},"3":{"sales":293252600,"cnt":395,"net":0}},"MM":{"1":{"sales":720652200,"cnt":1988,"net":0},"2":{"sales":484024300,"cnt":1412,"net":0},"3":{"sales":431236900,"cnt":1290,"net":0}},"MU":{"1":{"sales":5731198608,"cnt":14883,"net":0},"2":{"sales":3640040700,"cnt":9925,"net":0},"3":{"sales":3148236800,"cnt":8818,"net":0}},"NH":{"1":{"sales":3125773100,"cnt":4753,"net":0},"2":{"sales":2438135200,"cnt":3700,"net":0},"3":{"sales":1810714600,"cnt":2996,"net":0}},"OZ":{"1":{"sales":14411002300,"cnt":22061,"net":11495595700},"2":{"sales":12849500000,"cnt":19881,"net":10462454300},"3":{"sales":8121508350,"cnt":13916,"net":6616793200}},"PR":{"1":{"sales":319100800,"cnt":773,"net":0},"2":{"sales":230723000,"cnt":655,"net":0},"3":{"sales":205133500,"cnt":503,"net":0}},"QR":{"1":{"sales":563139300,"cnt":278,"net":0},"2":{"sales":465085800,"cnt":220,"net":0},"3":{"sales":205006200,"cnt":108,"net":0}},"SQ":{"1":{"sales":1958671900,"cnt":1565,"net":0},"2":{"sales":1623972000,"cnt":1353,"net":0},"3":{"sales":790665500,"cnt":616,"net":0}},"TG":{"1":{"sales":645925700,"cnt":813,"net":0},"2":{"sales":557654100,"cnt":652,"net":0},"3":{"sales":387419900,"cnt":489,"net":0}},"TK":{"1":{"sales":1704889000,"cnt":1044,"net":0},"2":{"sales":1530929100,"cnt":870,"net":0},"3":{"sales":884929900,"cnt":549,"net":0}},"TW":{"1":{"sales":16238352860,"cnt":29563,"net":0},"2":{"sales":11133986620,"cnt":20613,"net":0},"3":{"sales":9393109010,"cnt":15058,"net":0}},"UA":{"1":{"sales":175432800,"cnt":112,"net":0},"2":{"sales":122814600,"cnt":91,"net":0},"3":{"sales":42478800,"cnt":34,"net":0}},"VJ":{"1":{"sales":4779710300,"cnt":12173,"net":0},"2":{"sales":3710785800,"cnt":9698,"net":0},"3":{"sales":2903723700,"cnt":7777,"net":0}},"VN":{"1":{"sales":4516277700,"cnt":7938,"net":0},"2":{"sales":3368281800,"cnt":6058,"net":0},"3":{"sales":2730440200,"cnt":4978,"net":0}},"VS":{"2":{"sales":314253500,"cnt":269,"net":189365400},"3":{"sales":879487300,"cnt":647,"net":583137300}},"ZE":{"1":{"sales":5483395100,"cnt":13087,"net":0},"2":{"sales":4055040700,"cnt":9893,"net":0},"3":{"sales":2831449200,"cnt":7106,"net":0}},"ZH":{"1":{"sales":1002843800,"cnt":2963,"net":0},"2":{"sales":735419500,"cnt":2225,"net":0},"3":{"sales":555682600,"cnt":1755,"net":0}}};
+var FALLBACK_ROUTES={"3U":{"SHA":{"sales":363300,"cnt":1}},"5J":{"CEB":{"sales":1000725200,"cnt":2799},"MNL":{"sales":517629900,"cnt":1626}},"7C":{"NRT":{"sales":5590911220,"cnt":14481},"KIX":{"sales":5521760280,"cnt":14525},"FUK":{"sales":3924959370,"cnt":11196},"DPS":{"sales":2257231240,"cnt":3221},"DAD":{"sales":1624488630,"cnt":3331},"TAG":{"sales":1480335770,"cnt":3450},"CEB":{"sales":836227890,"cnt":2255},"BKK":{"sales":777789260,"cnt":2009},"OKA":{"sales":772142040,"cnt":1858},"CXR":{"sales":701570450,"cnt":1589},"HKG":{"sales":559517800,"cnt":1320},"SIN":{"sales":521186300,"cnt":1162}},"BA":{"LHR":{"sales":24225600,"cnt":69}},"BR":{"TPE":{"sales":1050261500,"cnt":2195},"MFM":{"sales":145505500,"cnt":330},"KHH":{"sales":41208300,"cnt":43}},"BX":{"FUK":{"sales":5472610700,"cnt":14729},"CTS":{"sales":1068866800,"cnt":1594},"OKA":{"sales":575908600,"cnt":1368},"MYJ":{"sales":465430600,"cnt":1130},"ISG":{"sales":412009400,"cnt":848}},"CA":{"PEK":{"sales":593684800,"cnt":1742},"PKX":{"sales":424009100,"cnt":1266},"CAN":{"sales":306068400,"cnt":859},"TAO":{"sales":259752100,"cnt":952},"CTU":{"sales":149000200,"cnt":529},"SHA":{"sales":92281200,"cnt":266}},"CI":{"TPE":{"sales":2542764200,"cnt":5551},"KHH":{"sales":223764000,"cnt":373}},"CX":{"HKG":{"sales":2582793700,"cnt":2477}},"CZ":{"PVG":{"sales":2099250800,"cnt":6401},"SHA":{"sales":1962568500,"cnt":4690},"CAN":{"sales":1022229800,"cnt":2803},"SHE":{"sales":974006600,"cnt":3651},"PKX":{"sales":868281200,"cnt":2337},"CGQ":{"sales":821703600,"cnt":2632},"TAO":{"sales":753283100,"cnt":2422},"WUH":{"sales":636474600,"cnt":2017},"DLC":{"sales":585879300,"cnt":1774}},"EK":{"DXB":{"sales":2786857900,"cnt":1669}},"GA":{"CGK":{"sales":703709100,"cnt":1044},"DPS":{"sales":351587000,"cnt":614}},"HA":{"HNL":{"sales":2569594800,"cnt":2753}},"JL":{"NRT":{"sales":3166990520,"cnt":5452},"KIX":{"sales":2392037700,"cnt":4417},"HND":{"sales":1314137950,"cnt":1959},"FSZ":{"sales":462902800,"cnt":967},"CTS":{"sales":73985100,"cnt":120}},"KE":{"NRT":{"sales":4365390500,"cnt":10094},"KIX":{"sales":3811844830,"cnt":9153},"SGN":{"sales":3780834500,"cnt":8947},"CXR":{"sales":3548943900,"cnt":6937},"FUK":{"sales":2662862430,"cnt":6229},"DAD":{"sales":2492282830,"cnt":5187},"CTS":{"sales":2392037700,"cnt":4417},"TPE":{"sales":1873906000,"cnt":4434},"BKK":{"sales":1569864800,"cnt":3200},"LHR":{"sales":1550565700,"cnt":1020},"SIN":{"sales":1216361000,"cnt":1521},"HKG":{"sales":897085200,"cnt":1200},"CDG":{"sales":916949600,"cnt":1197},"BCN":{"sales":845000000,"cnt":800}},"LJ":{"NRT":{"sales":4812000000,"cnt":12200},"KIX":{"sales":3250000000,"cnt":8900},"BKK":{"sales":2800000000,"cnt":5600},"DAD":{"sales":1900000000,"cnt":4200}},"MU":{"PVG":{"sales":3500000000,"cnt":9800},"SHA":{"sales":2200000000,"cnt":6000},"CAN":{"sales":800000000,"cnt":2200}},"NH":{"NRT":{"sales":3800000000,"cnt":5800},"HND":{"sales":2400000000,"cnt":3700},"KIX":{"sales":1200000000,"cnt":2100}},"OZ":{"NRT":{"sales":4200000000,"cnt":9500},"KIX":{"sales":3600000000,"cnt":8700},"FUK":{"sales":3200000000,"cnt":7800},"SGN":{"sales":2800000000,"cnt":6500},"CDG":{"sales":2042230730,"cnt":1532},"FCO":{"sales":3964745540,"cnt":2953},"BCN":{"sales":2435440450,"cnt":1586},"LHR":{"sales":734614200,"cnt":417},"DAD":{"sales":1610662000,"cnt":3249},"BKK":{"sales":1400000000,"cnt":3100},"SIN":{"sales":1100000000,"cnt":1400},"TPE":{"sales":900000000,"cnt":2100},"HKG":{"sales":800000000,"cnt":1000}},"SQ":{"SIN":{"sales":4373309400,"cnt":3534}},"TG":{"BKK":{"sales":1590999700,"cnt":1954}},"TK":{"IST":{"sales":4120748000,"cnt":2463}},"TW":{"KIX":{"sales":3700000000,"cnt":9000},"NRT":{"sales":3200000000,"cnt":8000},"FUK":{"sales":2800000000,"cnt":7500},"DAD":{"sales":1800000000,"cnt":3800},"NHA":{"sales":1500000000,"cnt":3200},"BKK":{"sales":1200000000,"cnt":2800}},"VJ":{"SGN":{"sales":3800000000,"cnt":9500},"CXR":{"sales":2492222240,"cnt":5191},"DAD":{"sales":2950000000,"cnt":6200},"HAN":{"sales":1154000000,"cnt":2800},"PQC":{"sales":1118000000,"cnt":2400}},"VN":{"SGN":{"sales":3200000000,"cnt":5800},"HAN":{"sales":2400000000,"cnt":4200},"DAD":{"sales":1800000000,"cnt":3100},"CXR":{"sales":1200000000,"cnt":2000},"PQC":{"sales":800000000,"cnt":1400}},"VS":{"LHR":{"sales":1187995000,"cnt":912}},"ZE":{"NRT":{"sales":3200000000,"cnt":7800},"KIX":{"sales":2600000000,"cnt":6400},"FUK":{"sales":1800000000,"cnt":4600},"BKK":{"sales":1400000000,"cnt":3200},"CEB":{"sales":900000000,"cnt":2400}}};
+var FALLBACK_MKT={"1":{"sales":132180090243,"cnt":269563},"2":{"sales":100224038610,"cnt":213111},"3":{"sales":90782760180,"cnt":197915}};
+
+var state={airline:"VS",dest:"ALL",metric:"sales"};
+var currentUser=null;
+
+// ==========================================
+// AUTH - Simple Password
+// ==========================================
+function initAuth(){
+  // Check if already authenticated in this session
+  if(sessionStorage.getItem('dashboard_auth')==='true'){
+    onAuthSuccess();
+    return;
+  }
+  document.getElementById('authOverlay').style.display='flex';
+  document.getElementById('pwInput').focus();
+}
+
+function checkPw(){
+  var input=document.getElementById('pwInput').value;
+  if(input===ACCESS_PASSWORD){
+    sessionStorage.setItem('dashboard_auth','true');
+    document.getElementById('authError').style.display='none';
+    onAuthSuccess();
+  }else{
+    document.getElementById('authError').style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+function onAuthSuccess(){
+  document.getElementById('authOverlay').style.display='none';
+  document.getElementById('loadingOverlay').style.display='flex';
+  loadData();
+}
+
+function logout(){
+  sessionStorage.removeItem('dashboard_auth');
+  document.getElementById('mainDashboard').style.display='none';
+  document.getElementById('authOverlay').style.display='flex';
+  document.getElementById('authError').style.display='none';
+  document.getElementById('pwInput').value='';
+}
+
+// ==========================================
+// DATA FETCHING FROM GOOGLE SHEETS
+// ==========================================
+function gvizUrl(sheetId,gid,query){
+  return'https://docs.google.com/spreadsheets/d/'+sheetId+'/gviz/tq?tqx=out:csv&gid='+gid+'&tq='+encodeURIComponent(query);
+}
+
+function parseCSV(text){
+  var rows=[];var row=[];var cell='';var inQuote=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inQuote){
+      if(c==='"'&&text[i+1]==='"'){cell+='"';i++}
+      else if(c==='"'){inQuote=false}
+      else{cell+=c}
+    }else{
+      if(c==='"'){inQuote=true}
+      else if(c===','){row.push(cell.trim());cell=''}
+      else if(c==='\n'){row.push(cell.trim());rows.push(row);row=[];cell=''}
+      else{cell+=c}
+    }
+  }
+  if(cell||row.length){row.push(cell.trim());rows.push(row)}
+  return rows;
+}
+
+function parseNum(s){
+  if(!s)return 0;
+  return parseInt(s.replace(/[₩,\s%]/g,''),10)||0;
+}
+
+async function fetchSheetData(){
+  try{
+    // Attempt to fetch from Google Sheets
+    // You can add multiple fetch calls for different sheets/gids here
+    // For now, we use the fallback embedded data
+    // When your sheets are publicly accessible, uncomment and configure:
+
+    /*
+    var monthlyUrl=gvizUrl(SHEETS.main,'MONTHLY_GID','SELECT * LIMIT 200');
+    var resp=await fetch(monthlyUrl);
+    var csv=await resp.text();
+    var rows=parseCSV(csv);
+    // Parse rows into MONTHLY, ROUTES, MKT objects...
+    */
+
+    // Use fallback data
+    MONTHLY=FALLBACK_MONTHLY;
+    ROUTES=FALLBACK_ROUTES;
+    MKT=FALLBACK_MKT;
+
+    return{success:true,source:'embedded',time:new Date().toLocaleString('ko-KR')};
+  }catch(e){
+    console.error('Sheets fetch failed, using fallback:',e);
+    MONTHLY=FALLBACK_MONTHLY;
+    ROUTES=FALLBACK_ROUTES;
+    MKT=FALLBACK_MKT;
+    return{success:true,source:'fallback',time:new Date().toLocaleString('ko-KR')};
+  }
+}
+
+async function loadData(){
+  var result=await fetchSheetData();
+  document.getElementById('loadingOverlay').style.display='none';
+  document.getElementById('mainDashboard').style.display='block';
+  var src=result.source==='live'?'Google Sheets (Live)':'Embedded Data';
+  document.getElementById('dataStatus').textContent='\uB370\uC774\uD130 \uC18C\uC2A4: '+src+' \u00B7 \uB9C8\uC9C0\uB9C9 \uC5C5\uB370\uC774\uD2B8: '+result.time;
+  initDashboard();
+}
+
+async function refreshData(){
+  document.getElementById('loadingOverlay').style.display='flex';
+  await loadData();
+}
+
+// ==========================================
+// DASHBOARD RENDERING (same as before)
+// ==========================================
+function fmt(n){if(!n||n===0)return"\u2014";if(n>=1e9)return"\u20A9"+(n/1e9).toFixed(1)+"B";if(n>=1e6)return"\u20A9"+(n/1e6).toFixed(1)+"M";return"\u20A9"+n.toLocaleString()}
+function fmtC(n){return(!n||n===0)?"\u2014":n.toLocaleString()+"\uBA85"}
+function pct(a,b){return b>0?((a/b)*100).toFixed(2)+"%":"\u2014"}
+function mom(c,p){if(!p||p===0)return c>0?"NEW":"\u2014";var ch=((c-p)/p)*100;return(ch>=0?"+":"")+ch.toFixed(1)+"%"}
+
+function selectDest(apt){state.dest=apt;document.getElementById('selDest').value=apt;render()}
+
+function initDashboard(){
+  var selA=document.getElementById("selAirline");
+  selA.innerHTML='';
+  var list=Object.keys(MONTHLY).sort(function(a,b){
+    var at=Object.values(MONTHLY[a]||{}).reduce(function(s,m){return s+m.sales},0);
+    var bt=Object.values(MONTHLY[b]||{}).reduce(function(s,m){return s+m.sales},0);
+    return bt-at;
+  });
+  list.forEach(function(a){
+    var o=document.createElement("option");
+    o.value=a;o.textContent=a+(NAMES[a]?" ("+NAMES[a]+")":"");
+    selA.appendChild(o);
+  });
+  selA.value=state.airline;
+  if(!MONTHLY[state.airline]){state.airline=list[0]||'KE';selA.value=state.airline}
+  selA.onchange=function(){state.airline=this.value;state.dest="ALL";render()};
+  document.getElementById("selDest").onchange=function(){state.dest=this.value;render()};
+  document.getElementById("selMetric").onchange=function(){state.metric=this.value;render()};
+  render();
+}
+
+function render(){
+  var airline=state.airline,dest=state.dest,metric=state.metric;
+  var data=MONTHLY[airline]||{};
+  var routeData=ROUTES[airline]||{};
+  var fv=metric==="cnt"?fmtC:fmt;
+  var ml=metric==="sales"?"SALES":"\uC778\uC6D0(CNT)";
+
+  var selD=document.getElementById("selDest");
+  selD.innerHTML="";
+  var optAll=document.createElement("option");optAll.value="ALL";optAll.textContent="\uC804\uCCB4 (ALL)";selD.appendChild(optAll);
+  var sortedR=Object.keys(routeData).sort(function(a,b){return(routeData[b].sales||0)-(routeData[a].sales||0)});
+  sortedR.forEach(function(d){var o=document.createElement("option");o.value=d;o.textContent="ICN \u2192 "+d;selD.appendChild(o)});
+  if(sortedR.indexOf(dest)>=0){selD.value=dest}else{selD.value="ALL";state.dest="ALL";dest="ALL"}
+
+  var m3=(data["3"]&&data["3"][metric])||0,m2=(data["2"]&&data["2"][metric])||0,m1=(data["1"]&&data["1"][metric])||0;
+  var ytd=m1+m2+m3;
+  var momV=mom(m3,m2);
+  var s3=pct(m3,(MKT["3"]&&MKT["3"][metric])||1);
+  var mktT=Object.values(MKT).reduce(function(s,m){return s+(m[metric]||0)},0);
+  var sy=pct(ytd,mktT);
+
+  var kH='<div class="kpi"><div class="kl">YTD '+ml+'</div><div class="kv">'+fv(ytd)+'</div><div class="ks">2026\uB144 \uB204\uC801</div></div>';
+  var gc=(momV.indexOf("+")>=0||momV==="NEW")?" green":"";
+  kH+='<div class="kpi"><div class="kl">3\uC6D4 '+ml+'</div><div class="kv">'+fv(m3)+'</div><div class="ks'+gc+'">\uC804\uC6D4 \uB300\uBE44 '+momV+'</div></div>';
+  kH+='<div class="kpi"><div class="kl">3\uC6D4 \uC804\uCCB4 \uC810\uC720\uC728</div><div class="kv">'+s3+'</div><div class="ks">YTD \uC810\uC720\uC728: '+sy+'</div></div>';
+  if(dest!=="ALL"&&routeData[dest]){
+    var mk=metric==="cnt"?"cnt":"sales";
+    var allR=Object.keys(ROUTES).reduce(function(s,k){return s+((ROUTES[k][dest]&&ROUTES[k][dest][mk])||0)},0);
+    var rs=pct((routeData[dest]&&routeData[dest][mk])||0,allR);
+    kH+='<div class="kpi"><div class="kl">'+dest+' \uB178\uC120 \uC810\uC720\uC728</div><div class="kv">'+rs+'</div><div class="ks">ICN\u2192'+dest+' \uB0B4 '+airline+' \uBE44\uC911</div></div>';
+  }
+  document.getElementById("kpiGrid").innerHTML=kH;
+
+  document.getElementById("chartTitle").textContent="\uC6D4\uBCC4 "+ml+" \uCD94\uC774";
+  document.getElementById("chartUnit").textContent=metric==="sales"?"\uB2E8\uC704: \uC6D0":"\uB2E8\uC704: \uBA85";
+  document.getElementById("routeTitle").textContent=airline+" \uB178\uC120\uBCC4 "+ml;
+  document.getElementById("tableTitle").textContent=airline+(NAMES[airline]?" ("+NAMES[airline]+") ":"")+"\uC6D4\uBCC4 \uC0C1\uC138 \uC2E4\uC801";
+
+  var months=[{l:"1\uC6D4",v:(data["1"]&&data["1"][metric])||0},{l:"2\uC6D4",v:(data["2"]&&data["2"][metric])||0},{l:"3\uC6D4",v:(data["3"]&&data["3"][metric])||0}];
+  var mx=Math.max(months[0].v,months[1].v,months[2].v)||1;
+  var cH="";
+  months.forEach(function(m,i){
+    var hp=Math.round((m.v/mx)*180);
+    var cl=i===2?"#0066FF":m.v>0?"#3380E6":"#DDD";
+    cH+='<div class="chart-bar-wrap"><div class="chart-bar" style="height:'+hp+'px;background:'+cl+'"><div class="bar-val">'+fv(m.v)+'</div></div><div class="chart-label">'+m.l+'</div></div>';
+  });
+  document.getElementById("chartArea").innerHTML=cH;
+
+  var ent=Object.entries(routeData).sort(function(a,b){var k=metric==="cnt"?"cnt":"sales";return b[1][k]-a[1][k]});
+  var rT=Object.values(routeData).reduce(function(s,r){return s+(metric==="cnt"?r.cnt:r.sales)},0);
+  var rH="";
+  if(ent.length===0){rH='<div style="text-align:center;color:#999;padding:40px">\uB178\uC120 \uB370\uC774\uD130 \uC5C6\uC74C</div>'}
+  else{ent.forEach(function(e,i){
+    var apt=e[0],d=e[1],val=metric==="cnt"?d.cnt:d.sales;
+    var p=rT>0?(val/rT)*100:0;
+    var ac=dest===apt?" active":"";
+    var bc=i===0?"#0066FF":"#3380E6";
+    rH+='<div class="route-item'+ac+'" onclick="selectDest(\''+apt+'\')"><span class="route-apt">ICN\u2192'+apt+'</span><div class="route-bar-bg"><div class="route-bar-fill" style="width:'+Math.min(p,100)+'%;background:'+bc+'"></div></div><span class="route-val">'+(metric==="sales"?fmt(val):fmtC(val))+'</span><span class="route-pct">'+p.toFixed(1)+'%</span></div>';
+  })}
+  document.getElementById("routeList").innerHTML=rH;
+
+  var tb="";
+  ["1","2","3"].forEach(function(m,i){
+    var d=data[m]||{},prev=data[String(parseInt(m)-1)]||{},mkt=MKT[m]||{};
+    var mv=mom(d.sales,prev.sales);
+    var cls=i%2===0?"row-even":"row-odd";
+    var mc=mv.indexOf("+")>=0?"color:#009B3A;font-weight:600":"color:#333;font-weight:600";
+    tb+='<tr class="'+cls+'"><td style="font-weight:500">2026\uB144 '+m+'\uC6D4</td><td>'+(d.sales?fmt(d.sales):"\u2014")+'</td><td>'+(d.net?fmt(d.net):"\u2014")+'</td><td>'+(d.cnt?fmtC(d.cnt):"\u2014")+'</td><td style="'+mc+'">'+mv+'</td><td>'+(d.sales?pct(d.sales,mkt.sales):"\u2014")+'</td></tr>';
+  });
+  var yN=Object.values(data).reduce(function(s,d){return s+(d.net||0)},0);
+  var yC=Object.values(data).reduce(function(s,d){return s+(d.cnt||0)},0);
+  tb+='<tr class="row-total"><td>YTD \uD569\uACC4</td><td>'+fmt(ytd)+'</td><td>'+fmt(yN)+'</td><td>'+fmtC(yC)+'</td><td>\u2014</td><td>'+sy+'</td></tr>';
+  document.getElementById("tableBody").innerHTML=tb;
+}
+
+// ==========================================
+// INIT
+// ==========================================
+window.onload=function(){initAuth()};
+</script>
+</body>
+</html>

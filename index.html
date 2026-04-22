@@ -75,6 +75,8 @@ td{padding:11px 16px}
 .topbar .btn-logout:hover{background:#F0F0F0}
 .topbar .btn-refresh{font-size:12px;color:#0066FF;cursor:pointer;border:1px solid #0066FF;border-radius:6px;padding:4px 12px;background:#fff;margin-right:8px}
 .topbar .btn-refresh:hover{background:#E8F2FF}
+.topbar .btn-pdf{font-size:12px;color:#E53935;cursor:pointer;border:1px solid #E53935;border-radius:6px;padding:4px 12px;background:#fff;margin-right:8px}
+.topbar .btn-pdf:hover{background:#FFF5F5}
 .data-status{font-size:11px;color:#999;margin-bottom:20px}
 .section-title{font-size:18px;color:#1B2A4A;font-weight:700;margin:32px 0 4px}
 .section-sub{font-size:12px;color:#999;margin-bottom:16px}
@@ -147,6 +149,7 @@ td{padding:11px 16px}
   <div class="topbar">
     <div></div>
     <div class="user-info">
+      <button class="btn-pdf" onclick="exportPDF()">📄 PDF 저장</button>
       <button class="btn-refresh" onclick="refreshData()">↻ 새로고침</button>
       <button class="btn-logout" onclick="logout()">로그아웃</button>
     </div>
@@ -215,7 +218,39 @@ td{padding:11px 16px}
   <div class="footer">Data source: Google Sheets (Live) · 마이리얼트립 항공사업팀</div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+// ==========================================
+// PDF Export
+// ==========================================
+function exportPDF(){
+  var code = document.getElementById('selAirline').value || 'ALL';
+  var name = (typeof NAMES !== 'undefined' && NAMES[code]) ? NAMES[code] : code;
+  var today = new Date();
+  var dateStr = today.getFullYear() + String(today.getMonth()+1).padStart(2,'0') + String(today.getDate()).padStart(2,'0');
+  var filename = '항공사실적_' + code + '_' + name + '_' + dateStr + '.pdf';
+
+  var el = document.getElementById('mainDashboard');
+  var btns = el.querySelector('.topbar');
+  var origDisplay = btns.style.display;
+  btns.style.display = 'none';
+
+  var opt = {
+    margin: [10, 10, 10, 10],
+    filename: filename,
+    image: {type:'jpeg', quality:0.95},
+    html2canvas: {scale:2, useCORS:true, scrollY:0, windowWidth:1200},
+    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
+    pagebreak: {mode:['avoid-all','css','legacy']}
+  };
+
+  html2pdf().set(opt).from(el).save().then(function(){
+    btns.style.display = origDisplay;
+  }).catch(function(){
+    btns.style.display = origDisplay;
+  });
+}
+
 // ==========================================
 // CONFIG - Simple Password Auth
 // ==========================================
@@ -453,17 +488,17 @@ function renderYoY(){
     return;
   }
 
-  var maxYoy = sorted[0].yoy;
   var h = '<div class="airline-focus">';
   h += '<div class="focus-main">';
   h += '<div class="focus-code">' + code + '</div>';
   h += '<div class="focus-name">' + name + '</div>';
   h += '<div class="focus-big">+' + match.yoy.toFixed(1) + '<span class="focus-unit">%</span></div>';
-  h += '<div class="focus-sub">Q1 GMV <b>' + (match.q1_gmv/1e8).toFixed(0) + '억</b> · 성장률 순위 <b>' + rank + '위</b> / ' + sorted.length + '개사</div>';
+  h += '<div class="focus-sub">Q1 2025 GMV <b>' + (match.q1_gmv/1e8).toFixed(0) + '억</b></div>';
   h += '</div>';
-  h += '<div class="focus-rank" style="flex:1.5">';
-  h += '<div class="rank-title">성장률 순위</div>';
-  h += buildRankList(sorted, code, 'yoy', function(d){return '+'+d.yoy.toFixed(1)+'%'}, maxYoy);
+  h += '<div class="focus-main" style="background:#FFF;border:1.5px solid #E0E0E0;align-items:center;text-align:center;min-width:160px;flex:0.5">';
+  h += '<div style="font-size:12px;color:#999;font-weight:600;margin-bottom:6px">성장률 순위</div>';
+  h += '<div style="font-size:42px;font-weight:800;color:#0066FF;line-height:1.1">' + rank + '<span style="font-size:16px;color:#737373;font-weight:500">위</span></div>';
+  h += '<div style="font-size:12px;color:#999;margin-top:6px">전체 ' + sorted.length + '개 항공사 중</div>';
   h += '</div></div>';
   document.getElementById('yoyCard').innerHTML = h;
 }
@@ -483,17 +518,17 @@ function renderShare(){
     return;
   }
 
-  var maxShare = sorted[0].share;
   var h = '<div class="airline-focus">';
   h += '<div class="focus-main">';
   h += '<div class="focus-code">' + code + '</div>';
   h += '<div class="focus-name">' + name + '</div>';
   h += '<div class="focus-big">' + match.share.toFixed(1) + '<span class="focus-unit">%</span></div>';
-  h += '<div class="focus-sub">외항사 내 점유율 순위 <b>' + rank + '위</b> / ' + sorted.length + '개사</div>';
+  h += '<div class="focus-sub">외항사 발권 기준 점유율</div>';
   h += '</div>';
-  h += '<div class="focus-rank" style="flex:1.5">';
-  h += '<div class="rank-title">마켓 셰어 순위</div>';
-  h += buildRankList(sorted, code, 'share', function(d){return d.share.toFixed(1)+'%'}, maxShare);
+  h += '<div class="focus-main" style="background:#FFF;border:1.5px solid #E0E0E0;align-items:center;text-align:center;min-width:160px;flex:0.5">';
+  h += '<div style="font-size:12px;color:#999;font-weight:600;margin-bottom:6px">점유율 순위</div>';
+  h += '<div style="font-size:42px;font-weight:800;color:#0066FF;line-height:1.1">' + rank + '<span style="font-size:16px;color:#737373;font-weight:500">위</span></div>';
+  h += '<div style="font-size:12px;color:#999;margin-top:6px">전체 ' + sorted.length + '개 항공사 중</div>';
   h += '</div></div>';
   document.getElementById('shareCard').innerHTML = h;
 }

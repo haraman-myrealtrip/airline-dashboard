@@ -52,6 +52,24 @@ td{padding:11px 16px}
 .footer{text-align:center;color:#BBB;font-size:11px;margin-top:24px;padding-bottom:20px}
 @media(max-width:900px){.grid2{grid-template-columns:1fr}.wrap{padding:20px 16px}}
 
+/* Print styles for PDF export */
+@media print{
+  body{background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .topbar,.btn-pdf,.btn-refresh,.btn-logout,#authOverlay,#loadingOverlay{display:none !important}
+  .wrap{padding:16px 24px !important;max-width:100% !important}
+  .kpi{background:#E8F2FF !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #DDD !important}
+  .grid2{grid-template-columns:1fr 1fr !important}
+  .grid4{grid-template-columns:repeat(4,1fr) !important}
+  thead tr{background:#1B2A4A !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .row-even{background:#F4F8FF !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .row-total{background:#1B2A4A !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .chart-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .route-bar-fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .footer{page-break-before:avoid}
+  @page{size:A4 landscape;margin:10mm}
+}
+
 /* Auth overlay */
 #authOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(27,42,74,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column}
 #authOverlay .auth-box{background:#fff;border-radius:16px;padding:48px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
@@ -197,12 +215,12 @@ td{padding:11px 16px}
 
   <!-- YoY Growth -->
   <div class="section-title" id="yoyTitle">전년 대비 성장률 (YoY)</div>
-  <div class="section-sub" id="yoySub">외항사 발권 기준 · Q1 2025 vs Q1 2024</div>
+  <div class="section-sub" id="yoySub">전체 항공사 발권 기준 · Q1 2025 vs Q1 2024</div>
   <div class="card" id="yoyCard"></div>
 
   <!-- Market Share -->
   <div class="section-title" id="shareTitle">마켓 셰어</div>
-  <div class="section-sub" id="shareSub">외항사 발권 기준 · 2025년 연간 점유율 (총 3,478억)</div>
+  <div class="section-sub" id="shareSub">전체 항공사 발권 기준 · 2025년 연간 점유율 (총 3,478억)</div>
   <div class="card" id="shareCard"></div>
 
   <!-- Airline Monthly Trend -->
@@ -224,46 +242,15 @@ td{padding:11px 16px}
 // PDF Export
 // ==========================================
 function exportPDF(){
-  var code = document.getElementById('selAirline').value || 'ALL';
-  var name = (typeof NAMES !== 'undefined' && NAMES[code]) ? NAMES[code] : code;
-  var today = new Date();
-  var dateStr = today.getFullYear() + String(today.getMonth()+1).padStart(2,'0') + String(today.getDate()).padStart(2,'0');
-  var filename = '항공사실적_' + code + '_' + name + '_' + dateStr + '.pdf';
-
-  var el = document.getElementById('mainDashboard');
-  var btns = el.querySelector('.topbar');
-  var origDisplay = btns.style.display;
-  btns.style.display = 'none';
-
-  // 스크롤 위치 저장 후 맨 위로 이동
-  var scrollTop = window.scrollY || document.documentElement.scrollTop;
-  window.scrollTo(0, 0);
-
-  var opt = {
-    margin: [8, 5, 8, 5],
-    filename: filename,
-    image: {type:'jpeg', quality:0.98},
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      scrollY: 0,
-      scrollX: 0,
-      windowWidth: el.scrollWidth || 1200,
-      windowHeight: el.scrollHeight,
-      logging: false
-    },
-    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
-    pagebreak: {mode:['css','legacy'], avoid:['tr','.card','.airline-focus']}
-  };
-
-  html2pdf().set(opt).from(el).save().then(function(){
-    btns.style.display = origDisplay;
-    window.scrollTo(0, scrollTop);
-  }).catch(function(e){
-    btns.style.display = origDisplay;
-    window.scrollTo(0, scrollTop);
-    alert('PDF 저장 중 오류가 발생했습니다: ' + e);
-  });
+  // 브라우저 인쇄 기능으로 PDF 저장 (가장 안정적)
+  var topbar = document.querySelector('.topbar');
+  var authOverlay = document.getElementById('authOverlay');
+  var loadingOverlay = document.getElementById('loadingOverlay');
+  topbar.style.display = 'none';
+  authOverlay.style.display = 'none';
+  loadingOverlay.style.display = 'none';
+  window.print();
+  topbar.style.display = '';
 }
 
 // ==========================================
@@ -529,7 +516,7 @@ function renderYoY(){
   document.getElementById('yoySub').textContent = '발권 기준 · Q1 2026 vs Q1 2025 · ' + sorted.length + '개 항공사 비교';
 
   if(!match){
-    document.getElementById('yoyCard').innerHTML = '<div class="focus-empty"><div class="empty-icon">📊</div>' + code + ' (' + name + ')의 YoY 데이터가 없습니다.<br><span style="font-size:12px;color:#BBB">외항사 발권 데이터에 포함된 항공사만 표시됩니다.</span></div>';
+    document.getElementById('yoyCard').innerHTML = '<div class="focus-empty"><div class="empty-icon">📊</div>' + code + ' (' + name + ')의 YoY 데이터가 없습니다.<br><span style="font-size:12px;color:#BBB">전체 항공사 발권 데이터에 포함된 항공사만 표시됩니다.</span></div>';
     return;
   }
 
@@ -555,7 +542,7 @@ function renderShare(){
   document.getElementById('shareSub').textContent = '발권 기준 · Q1 2026 점유율';
 
   if(!match){
-    document.getElementById('shareCard').innerHTML = '<div class="focus-empty"><div class="empty-icon">📊</div>' + code + ' (' + name + ')의 마켓 셰어 데이터가 없습니다.<br><span style="font-size:12px;color:#BBB">외항사 발권 데이터에 포함된 항공사만 표시됩니다.</span></div>';
+    document.getElementById('shareCard').innerHTML = '<div class="focus-empty"><div class="empty-icon">📊</div>' + code + ' (' + name + ')의 마켓 셰어 데이터가 없습니다.<br><span style="font-size:12px;color:#BBB">전체 항공사 발권 데이터에 포함된 항공사만 표시됩니다.</span></div>';
     return;
   }
 
@@ -564,7 +551,7 @@ function renderShare(){
   h += '<div class="focus-code">' + code + '</div>';
   h += '<div class="focus-name">' + name + '</div>';
   h += '<div class="focus-big">' + match.share.toFixed(1) + '<span class="focus-unit">%</span></div>';
-  h += '<div class="focus-sub">외항사 발권 기준 점유율</div>';
+  h += '<div class="focus-sub">전체 항공사 발권 기준 점유율</div>';
   h += '</div></div>';
   document.getElementById('shareCard').innerHTML = h;
 }

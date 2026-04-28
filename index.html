@@ -504,13 +504,13 @@ function buildRankList(sorted, code, valKey, valFmt, maxVal){
     var isMe = d.code === code;
     var w = Math.round((d[valKey] / maxVal) * 100);
     var cls = isMe ? 'rank-item rank-active' : 'rank-item';
-    var barCol = isMe ? '#0066FF' : '#D0D5DD';
+    var barCol = isMe ? '#1D4ED8' : '#D0D5DD';
     h += '<div class="'+cls+'"><span class="rank-num">'+(i+1)+'</span><span class="rank-code">'+d.code+'</span><div class="rank-bar-bg"><div class="rank-bar" style="width:'+w+'%;background:'+barCol+'"></div></div><span class="rank-val">'+valFmt(d)+'</span></div>';
   });
   if(rank > 5){
     h += '<div style="text-align:center;color:#CCC;font-size:11px;padding:3px 0">···</div>';
     var d = sorted[rank-1];
-    h += '<div class="rank-item rank-active"><span class="rank-num">'+rank+'</span><span class="rank-code">'+d.code+'</span><div class="rank-bar-bg"><div class="rank-bar" style="width:'+Math.round((d[valKey]/maxVal)*100)+'%;background:#0066FF"></div></div><span class="rank-val">'+valFmt(d)+'</span></div>';
+    h += '<div class="rank-item rank-active"><span class="rank-num">'+rank+'</span><span class="rank-code">'+d.code+'</span><div class="rank-bar-bg"><div class="rank-bar" style="width:'+Math.round((d[valKey]/maxVal)*100)+'%;background:#1D4ED8"></div></div><span class="rank-val">'+valFmt(d)+'</span></div>';
   }
   return h;
 }
@@ -611,20 +611,20 @@ function renderTrend(){
     var h25 = Math.round((v25/mx)*160);
     var h26 = Math.round((v26/mx)*160);
     h += '<div class="trend-month"><div class="trend-group">';
-    if(has24) h += '<div class="trend-bar" data-year="2024" data-month="'+m+'" data-gmv="'+v24+'" data-prev="0" style="height:'+h24+'px;background:#D0D5DD"></div>';
+    if(has24) h += '<div class="trend-bar" data-year="2024" data-month="'+m+'" data-gmv="'+v24+'" data-prev="0" style="height:'+h24+'px;background:#CBD5E1"></div>';
     var yoy25v = v24>0 ? ((v25-v24)/v24*100).toFixed(1) : null;
-    h += '<div class="trend-bar" data-year="2025" data-month="'+m+'" data-gmv="'+v25+'" data-prev="'+v24+'" style="height:'+h25+'px;background:#3380E6"></div>';
+    h += '<div class="trend-bar" data-year="2025" data-month="'+m+'" data-gmv="'+v25+'" data-prev="'+v24+'" style="height:'+h25+'px;background:#93C5FD"></div>';
     if(v26>0){
       var yoy26v = v25>0 ? ((v26-v25)/v25*100).toFixed(1) : null;
-      h += '<div class="trend-bar" data-year="2026" data-month="'+m+'" data-gmv="'+v26+'" data-prev="'+v25+'" style="height:'+h26+'px;background:#0066FF"></div>';
+      h += '<div class="trend-bar" data-year="2026" data-month="'+m+'" data-gmv="'+v26+'" data-prev="'+v25+'" style="height:'+h26+'px;background:#1D4ED8"></div>';
     }
     h += '</div><div class="trend-label">'+m+'월</div></div>';
   }
   h += '</div>';
   h += '<div class="trend-legend">';
-  if(has24) h += '<div class="trend-legend-item"><div class="trend-legend-dot" style="background:#D0D5DD"></div>2024</div>';
-  h += '<div class="trend-legend-item"><div class="trend-legend-dot" style="background:#3380E6"></div>2025</div>';
-  h += '<div class="trend-legend-item"><div class="trend-legend-dot" style="background:#0066FF"></div>2026</div>';
+  if(has24) h += '<div class="trend-legend-item"><div class="trend-legend-dot" style="background:#CBD5E1"></div>2024</div>';
+  h += '<div class="trend-legend-item"><div class="trend-legend-dot" style="background:#93C5FD"></div>2025</div>';
+  h += '<div class="trend-legend-item"><div class="trend-legend-dot" style="background:#1D4ED8"></div>2026</div>';
   h += '</div>';
   document.getElementById('trendCard').innerHTML = h;
   // Attach tooltip events to trend bars
@@ -681,7 +681,7 @@ function renderForward(){
     var label = parts[1] + '월';
     h += '<div class="hbar-row">';
     h += '<span class="hbar-code" style="width:50px">' + label + '</span>';
-    h += '<div class="hbar-bar-bg"><div class="hbar-bar" style="width:'+w+'%;background:rgba(0,102,255,'+opacity+')"></div></div>';
+    h += '<div class="hbar-bar-bg"><div class="hbar-bar" style="width:'+w+'%;background:rgba(29,78,216,'+opacity+')"></div></div>';
     h += '<span class="hbar-val">' + (d.gmv/1e8).toFixed(0) + '억</span>';
     h += '</div>';
   });
@@ -760,7 +760,7 @@ function render(){
   var cH="";
   months.forEach(function(m,i){
     var hp=Math.round((m.v/mx)*180);
-    var cl=i===3?"#0066FF":m.v>0?"#3380E6":"#DDD";
+    var cl=i===3?"#1D4ED8":m.v>0?"#60A5FA":"#E2E8F0";
     var prevSales=i>0?months[i-1].sales:0;
     var prevCnt=i>0?months[i-1].cnt:0;
     var mktM=MKT[m.k]||{};
@@ -794,7 +794,7 @@ function render(){
     var apt=e[0],d=e[1],val=metric==="cnt"?d.cnt:d.sales;
     var p=rT>0?(val/rT)*100:0;
     var ac=dest===apt?" active":"";
-    var bc=i===0?"#0066FF":"#3380E6";
+    var bc=i===0?"#1D4ED8":"#60A5FA";
     var sales2=d.sales||0, cnt2=d.cnt||0;
     rH+='<div class="route-item'+ac+'" onclick="selectDest(\''+apt+'\')" data-tt-apt="'+apt+'" data-tt-sales="'+sales2+'" data-tt-cnt="'+cnt2+'" data-tt-pct="'+p.toFixed(1)+'"><span class="route-apt">ICN\u2192'+apt+'</span><div class="route-bar-bg"><div class="route-bar-fill" style="width:'+Math.min(p,100)+'%;background:'+bc+'"></div></div><span class="route-val">'+(metric==="sales"?fmt(val):fmtC(val))+'</span><span class="route-pct">'+p.toFixed(1)+'%</span></div>';
   })}

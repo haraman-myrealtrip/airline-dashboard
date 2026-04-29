@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>항공사 실적 분석 대시보드 | 항공사업팀</title>
-<!-- Simple password auth - no Google Cloud needed -->
+<!-- Google OAuth authentication - @myrealtrip.com domain only -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -87,6 +88,9 @@ td{padding:11px 16px}
 #authOverlay .auth-sub{color:#737373;font-size:14px;margin-bottom:28px}
 #authOverlay .auth-error{color:#E53935;font-size:13px;margin-top:16px;display:none}
 #authOverlay .auth-info{color:#999;font-size:11px;margin-top:20px}
+#authOverlay .g-signin-wrap{margin-top:8px;display:flex;justify-content:center}
+#authOverlay .auth-user{margin-top:16px;display:none;font-size:13px;color:#737373}
+#authOverlay .auth-user img{width:32px;height:32px;border-radius:50%;vertical-align:middle;margin-right:8px}
 
 /* Loading */
 #loadingOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#F7F8FA;z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column}
@@ -156,13 +160,26 @@ td{padding:11px 16px}
 <div id="authOverlay">
   <div class="auth-box">
     <div class="auth-logo">항공사업팀 대시보드</div>
-    <div class="auth-sub">접근 비밀번호를 입력해 주세요</div>
-    <div style="margin-top:8px">
-      <input type="password" id="pwInput" placeholder="비밀번호 입력" style="font-family:inherit;padding:12px 16px;border-radius:8px;border:1.5px solid #D0D5DD;font-size:15px;width:100%;outline:none;margin-bottom:12px" onkeydown="if(event.key==='Enter')checkPw()">
-      <button onclick="checkPw()" style="font-family:inherit;width:100%;padding:12px;border:none;border-radius:8px;background:#0066FF;color:#fff;font-size:15px;font-weight:600;cursor:pointer">로그인</button>
+    <div class="auth-sub">마이리얼트립 Google 계정으로 로그인해 주세요</div>
+    <div class="g-signin-wrap">
+      <div id="g_id_onload"
+        data-client_id="396719596652-iou6v4e2n9v8sm284368ue2a0itkgvuu.apps.googleusercontent.com"
+        data-callback="handleGoogleSignIn"
+        data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+        data-type="standard"
+        data-shape="rectangular"
+        data-theme="outline"
+        data-text="signin_with"
+        data-size="large"
+        data-logo_alignment="left"
+        data-width="300">
+      </div>
     </div>
-    <div class="auth-error" id="authError">비밀번호가 올바르지 않습니다.</div>
-    <div class="auth-info">마이리얼트립 항공사업팀 전용</div>
+    <div class="auth-user" id="authUser"></div>
+    <div class="auth-error" id="authError">@myrealtrip.com 계정만 접근할 수 있습니다.</div>
+    <div class="auth-info">마이리얼트립 항공사업팀 전용 (@myrealtrip.com)</div>
   </div>
 </div>
 
@@ -175,7 +192,10 @@ td{padding:11px 16px}
 <!-- Main Dashboard -->
 <div class="wrap" id="mainDashboard" style="display:none">
   <div class="topbar">
-    <div></div>
+    <div class="user-info" id="topbarUser">
+      <img id="topbarAvatar" src="" alt="" style="display:none">
+      <span id="topbarName"></span>
+    </div>
     <div class="user-info">
       <button class="btn-pdf" onclick="exportPDF()">📄 PDF 저장</button>
       <button class="btn-refresh" onclick="refreshData()">↻ 새로고침</button>
@@ -264,10 +284,14 @@ function exportPDF(){
 }
 
 // ==========================================
-// CONFIG - Simple Password Auth
+// CONFIG - Google OAuth
 // ==========================================
-// 비밀번호를 변경하려면 아래 값을 수정하세요
-var ACCESS_PASSWORD = 'mrt2026';
+// Google Cloud Console에서 발급받은 OAuth 클라이언트 ID를 입력하세요
+var GOOGLE_CLIENT_ID = '396719596652-iou6v4e2n9v8sm284368ue2a0itkgvuu.apps.googleusercontent.com';
+// 허용할 이메일 도메인 (@ 뒤 부분)
+var ALLOWED_DOMAIN = 'myrealtrip.com';
+// 로그인한 사용자 정보 저장
+var currentUser = null;
 
 // ==========================================
 // CONFIG - Google Sheets IDs
@@ -375,25 +399,54 @@ var currentUser=null;
 // ==========================================
 function initAuth(){
   // Check if already authenticated in this session
-  if(sessionStorage.getItem('dashboard_auth')==='true'){
-    onAuthSuccess();
-    return;
+  var saved = sessionStorage.getItem('dashboard_user');
+  if(saved){
+    try{
+      currentUser = JSON.parse(saved);
+      showUserInfo(currentUser);
+      onAuthSuccess();
+      return;
+    }catch(e){ sessionStorage.removeItem('dashboard_user'); }
   }
   document.getElementById('authOverlay').style.display='flex';
-  document.getElementById('pwInput').focus();
 }
 
-function checkPw(){
-  var input=document.getElementById('pwInput').value;
-  if(input===ACCESS_PASSWORD){
-    sessionStorage.setItem('dashboard_auth','true');
-    document.getElementById('authError').style.display='none';
-    onAuthSuccess();
-  }else{
+// Google Sign-In callback (called by GIS library)
+function handleGoogleSignIn(response){
+  // Decode JWT payload
+  var payload = JSON.parse(atob(response.credential.split('.')[1]));
+  var email = payload.email || '';
+  var domain = email.split('@')[1] || '';
+
+  if(domain.toLowerCase() !== ALLOWED_DOMAIN){
+    // Wrong domain
     document.getElementById('authError').style.display='block';
-    document.getElementById('pwInput').value='';
-    document.getElementById('pwInput').focus();
+    var userDiv = document.getElementById('authUser');
+    userDiv.innerHTML = '<img src="'+payload.picture+'"> '+email;
+    userDiv.style.display='block';
+    // Revoke the credential
+    google.accounts.id.disableAutoSelect();
+    return;
   }
+
+  // Allowed domain — save user info
+  currentUser = {
+    name: payload.name,
+    email: payload.email,
+    picture: payload.picture
+  };
+  sessionStorage.setItem('dashboard_user', JSON.stringify(currentUser));
+  document.getElementById('authError').style.display='none';
+  showUserInfo(currentUser);
+  onAuthSuccess();
+}
+
+function showUserInfo(user){
+  if(!user) return;
+  var avatar = document.getElementById('topbarAvatar');
+  var name = document.getElementById('topbarName');
+  if(user.picture){ avatar.src=user.picture; avatar.style.display='inline'; }
+  name.textContent = user.name || user.email;
 }
 
 function onAuthSuccess(){
@@ -403,11 +456,19 @@ function onAuthSuccess(){
 }
 
 function logout(){
-  sessionStorage.removeItem('dashboard_auth');
+  sessionStorage.removeItem('dashboard_user');
+  currentUser = null;
+  google.accounts.id.disableAutoSelect();
   document.getElementById('mainDashboard').style.display='none';
   document.getElementById('authOverlay').style.display='flex';
   document.getElementById('authError').style.display='none';
-  document.getElementById('pwInput').value='';
+  document.getElementById('topbarAvatar').style.display='none';
+  document.getElementById('topbarName').textContent='';
+  // Re-render Google Sign-In button
+  google.accounts.id.renderButton(
+    document.querySelector('.g_id_signin'),
+    {theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:300}
+  );
 }
 
 // ==========================================

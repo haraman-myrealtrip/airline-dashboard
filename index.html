@@ -63,10 +63,42 @@ td{padding:11px 16px}
 .footer{text-align:center;color:#BBB;font-size:11px;margin-top:24px;padding-bottom:20px}
 @media(max-width:900px){.grid2{grid-template-columns:1fr}.wrap{padding:20px 16px}}
 
+/* Airline Select Page */
+#airlineSelectPage{display:none;min-height:100vh;background:#F7F8FA;padding:32px 48px}
+#airlineSelectPage .asp-header{max-width:1400px;margin:0 auto 28px}
+#airlineSelectPage .asp-header .asp-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+#airlineSelectPage .asp-tag{color:#0066FF;font-size:12px;font-weight:600;margin-bottom:4px}
+#airlineSelectPage .asp-line{width:44px;height:2.5px;background:#0066FF;margin-bottom:14px}
+#airlineSelectPage .asp-title{font-size:28px;color:#1B2A4A;font-weight:700;margin-bottom:6px}
+#airlineSelectPage .asp-sub{color:#737373;font-size:14px;margin-bottom:20px}
+#airlineSelectPage .asp-search{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#airlineSelectPage .asp-search input{padding:10px 16px;border-radius:8px;border:1.5px solid #D0D5DD;font-size:14px;width:320px;outline:none;font-family:inherit}
+#airlineSelectPage .asp-search input:focus{border-color:#0066FF}
+#airlineSelectPage .asp-search .asp-count{font-size:13px;color:#999}
+#airlineSelectPage .asp-filters{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+#airlineSelectPage .asp-filter-btn{padding:6px 14px;border-radius:20px;border:1px solid #D0D5DD;background:#fff;font-size:12px;color:#737373;cursor:pointer;font-family:inherit;font-weight:500;transition:all 0.15s}
+#airlineSelectPage .asp-filter-btn:hover{border-color:#0066FF;color:#0066FF}
+#airlineSelectPage .asp-filter-btn.active{background:#0066FF;color:#fff;border-color:#0066FF}
+.airline-grid{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.airline-card{background:#fff;border-radius:12px;border:1px solid #E0E0E0;padding:20px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.airline-card:hover{border-color:#0066FF;box-shadow:0 4px 16px rgba(0,102,255,0.12);transform:translateY(-2px)}
+.airline-card .ac-code{font-size:22px;font-weight:800;color:#1B2A4A;margin-bottom:2px}
+.airline-card .ac-name{font-size:12px;color:#737373;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.airline-card .ac-metric{font-size:11px;color:#999;margin-bottom:2px}
+.airline-card .ac-value{font-size:16px;font-weight:700;color:#1B2A4A}
+.airline-card .ac-sub{font-size:11px;color:#999;margin-top:4px}
+.airline-card .ac-badge{position:absolute;top:12px;right:12px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.airline-card .ac-badge.up{background:#ECFDF5;color:#059669}
+.airline-card .ac-badge.down{background:#FFF1F2;color:#E11D48}
+.airline-card .ac-badge.new-badge{background:#EFF6FF;color:#2563EB}
+.airline-card .ac-bar{margin-top:10px;background:#F0F0F0;border-radius:3px;height:4px;overflow:hidden}
+.airline-card .ac-bar-fill{height:4px;border-radius:3px;background:#0066FF}
+@media(max-width:900px){#airlineSelectPage{padding:20px 16px}.airline-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
+
 /* Print styles for PDF export */
 @media print{
   body{background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .topbar,.btn-pdf,.btn-refresh,.btn-logout,#authOverlay,#loadingOverlay{display:none !important}
+  .topbar,.btn-pdf,.btn-refresh,.btn-logout,#authOverlay,#loadingOverlay,#airlineSelectPage{display:none !important}
   .wrap{padding:16px 24px !important;max-width:100% !important}
   .kpi{background:#E8F2FF !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #DDD !important}
@@ -189,10 +221,45 @@ td{padding:11px 16px}
   <div class="load-text">Google Sheets에서 데이터를 불러오는 중...</div>
 </div>
 
+<!-- Airline Select Page -->
+<div id="airlineSelectPage">
+  <div class="asp-header">
+    <div class="asp-topbar">
+      <div class="user-info" id="selectPageUser">
+        <img id="selectPageAvatar" src="" alt="" style="display:none">
+        <span id="selectPageName"></span>
+      </div>
+      <div class="user-info">
+        <button class="btn-logout" onclick="logout()">로그아웃</button>
+      </div>
+    </div>
+    <div class="asp-tag">항공사업팀 실적 대시보드</div>
+    <div class="asp-line"></div>
+    <div class="asp-title">항공사를 선택해 주세요</div>
+    <div class="asp-sub">2026년 1월~4월 발권 실적 현황 · ICN 출발 기준 · 카드를 클릭하면 상세 대시보드로 이동합니다</div>
+    <div class="asp-search">
+      <input type="text" id="airlineSearch" placeholder="항공사 코드 또는 이름으로 검색 (예: KE, 대한항공)" oninput="filterAirlineCards()">
+      <span class="asp-count" id="airlineCount"></span>
+    </div>
+    <div class="asp-filters" id="airlineFilters">
+      <button class="asp-filter-btn active" onclick="setCardFilter('all',this)">전체</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('fsc',this)">FSC (대형)</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('lcc',this)">LCC (저비용)</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('china',this)">중국계</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('japan',this)">일본계</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('sea',this)">동남아</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('europe',this)">유럽/중동</button>
+      <button class="asp-filter-btn" onclick="setCardFilter('america',this)">미주</button>
+    </div>
+  </div>
+  <div class="airline-grid" id="airlineGrid"></div>
+</div>
+
 <!-- Main Dashboard -->
 <div class="wrap" id="mainDashboard" style="display:none">
   <div class="topbar">
     <div class="user-info" id="topbarUser">
+      <button class="btn-refresh" onclick="goToSelectPage()" style="margin-right:4px">← 항공사 목록</button>
       <img id="topbarAvatar" src="" alt="" style="display:none">
       <span id="topbarName"></span>
     </div>
@@ -450,10 +517,16 @@ function handleGoogleSignIn(response){
 
 function showUserInfo(user){
   if(!user) return;
+  // Dashboard topbar
   var avatar = document.getElementById('topbarAvatar');
   var name = document.getElementById('topbarName');
   if(user.picture){ avatar.src=user.picture; avatar.style.display='inline'; }
   name.textContent = user.name || user.email;
+  // Select page topbar
+  var avatar2 = document.getElementById('selectPageAvatar');
+  var name2 = document.getElementById('selectPageName');
+  if(avatar2 && user.picture){ avatar2.src=user.picture; avatar2.style.display='inline'; }
+  if(name2) name2.textContent = user.name || user.email;
 }
 
 function onAuthSuccess(){
@@ -462,11 +535,112 @@ function onAuthSuccess(){
   loadData();
 }
 
+// Airline category mapping for filters
+var AIRLINE_CATS = {
+  fsc:['KE','OZ','VN','SQ','TK','EK','CX','BR','CI','TG','BA','DL','AA','UA','GA','HA','LH','AF','MH','QR','AC','AI','AY','SK','EY','LO','VS','NZ','QF','UL','KC','OM'],
+  lcc:['7C','TW','LJ','ZE','BX','VJ','MM','5J','YP','RS','WE','VZ','OD'],
+  china:['CZ','MU','CA','ZH','SC','3U','HX','NX'],
+  japan:['JL','NH','MM'],
+  sea:['VJ','VN','SQ','TG','GA','MH','PR','5J','8M','QV'],
+  europe:['TK','EK','BA','LH','AF','AY','SK','EY','LO','VS','QR'],
+  america:['DL','AA','UA','AC','HA','YP']
+};
+var currentCardFilter = 'all';
+
+function setCardFilter(cat, btn){
+  currentCardFilter = cat;
+  document.querySelectorAll('.asp-filter-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  filterAirlineCards();
+}
+
+function filterAirlineCards(){
+  var q = (document.getElementById('airlineSearch').value||'').toLowerCase().trim();
+  var cards = document.querySelectorAll('.airline-card');
+  var shown = 0;
+  cards.forEach(function(card){
+    var code = card.dataset.code;
+    var cname = card.dataset.name;
+    var matchText = !q || code.toLowerCase().indexOf(q) >= 0 || cname.toLowerCase().indexOf(q) >= 0;
+    var matchCat = currentCardFilter === 'all' || (AIRLINE_CATS[currentCardFilter] && AIRLINE_CATS[currentCardFilter].indexOf(code) >= 0);
+    if(matchText && matchCat){ card.style.display=''; shown++; }
+    else { card.style.display='none'; }
+  });
+  document.getElementById('airlineCount').textContent = shown + '개 항공사';
+}
+
+function renderAirlineSelectPage(){
+  var grid = document.getElementById('airlineGrid');
+  // Build airline list sorted by YTD sales
+  var airlines = Object.keys(MONTHLY).sort(function(a,b){
+    var at = Object.values(MONTHLY[a]||{}).reduce(function(s,m){return s+(m.sales||0)},0);
+    var bt = Object.values(MONTHLY[b]||{}).reduce(function(s,m){return s+(m.sales||0)},0);
+    return bt - at;
+  });
+  var maxSales = 0;
+  airlines.forEach(function(code){
+    var ytd = Object.values(MONTHLY[code]||{}).reduce(function(s,m){return s+(m.sales||0)},0);
+    if(ytd > maxSales) maxSales = ytd;
+  });
+  var h = '';
+  airlines.forEach(function(code, idx){
+    var name = NAMES[code] || code;
+    var data = MONTHLY[code] || {};
+    var ytd = Object.values(data).reduce(function(s,m){return s+(m.sales||0)},0);
+    var cnt = Object.values(data).reduce(function(s,m){return s+(m.cnt||0)},0);
+    var barW = maxSales > 0 ? Math.round((ytd/maxSales)*100) : 0;
+    // YoY badge
+    var badge = '';
+    for(var yi=0;yi<YOY_DATA.length;yi++){
+      if(YOY_DATA[yi].code===code){
+        var yoy = YOY_DATA[yi].yoy;
+        if(yoy >= 0) badge = '<div class="ac-badge up">+'+yoy.toFixed(0)+'%</div>';
+        else badge = '<div class="ac-badge down">'+yoy.toFixed(0)+'%</div>';
+        break;
+      }
+    }
+    if(!badge && ytd > 0) badge = '<div class="ac-badge new-badge">NEW</div>';
+    // Format YTD
+    var ytdFmt = ytd >= 1e9 ? (ytd/1e9).toFixed(1)+'B' : ytd >= 1e6 ? (ytd/1e6).toFixed(0)+'M' : ytd.toLocaleString();
+    h += '<div class="airline-card" data-code="'+code+'" data-name="'+name+'" onclick="selectAirline(\''+code+'\')">';
+    h += badge;
+    h += '<div class="ac-code">'+code+'</div>';
+    h += '<div class="ac-name">'+name+'</div>';
+    h += '<div class="ac-metric">YTD SALES</div>';
+    h += '<div class="ac-value">₩'+ytdFmt+'</div>';
+    h += '<div class="ac-sub">'+cnt.toLocaleString()+'명</div>';
+    h += '<div class="ac-bar"><div class="ac-bar-fill" style="width:'+barW+'%"></div></div>';
+    h += '</div>';
+  });
+  grid.innerHTML = h;
+  document.getElementById('airlineCount').textContent = airlines.length + '개 항공사';
+}
+
+function selectAirline(code){
+  state.airline = code;
+  state.dest = 'ALL';
+  document.getElementById('airlineSelectPage').style.display = 'none';
+  document.getElementById('mainDashboard').style.display = 'block';
+  document.getElementById('dataStatus').textContent = _dataStatusText;
+  initDashboard();
+}
+
+function goToSelectPage(){
+  document.getElementById('mainDashboard').style.display = 'none';
+  document.getElementById('airlineSelectPage').style.display = 'block';
+  document.getElementById('airlineSearch').value = '';
+  currentCardFilter = 'all';
+  document.querySelectorAll('.asp-filter-btn').forEach(function(b){b.classList.remove('active')});
+  document.querySelector('.asp-filter-btn').classList.add('active');
+  filterAirlineCards();
+}
+
 function logout(){
   sessionStorage.removeItem('dashboard_user');
   currentUser = null;
   google.accounts.id.disableAutoSelect();
   document.getElementById('mainDashboard').style.display='none';
+  document.getElementById('airlineSelectPage').style.display='none';
   document.getElementById('authOverlay').style.display='flex';
   document.getElementById('authError').style.display='none';
   document.getElementById('topbarAvatar').style.display='none';
@@ -539,18 +713,26 @@ async function fetchSheetData(){
   }
 }
 
+var _dataLoaded=false;
+var _dataStatusText='';
 async function loadData(){
   var result=await fetchSheetData();
   document.getElementById('loadingOverlay').style.display='none';
-  document.getElementById('mainDashboard').style.display='block';
   var src=result.source==='live'?'Google Sheets (Live)':'Embedded Data';
-  document.getElementById('dataStatus').textContent='\uB370\uC774\uD130 \uC18C\uC2A4: '+src+' \u00B7 \uB9C8\uC9C0\uB9C9 \uC5C5\uB370\uC774\uD2B8: '+result.time;
-  initDashboard();
+  _dataStatusText=src+' | '+result.time;
+  _dataLoaded=true;
+  document.getElementById('airlineSelectPage').style.display='block';
+  renderAirlineSelectPage();
 }
 
 async function refreshData(){
   document.getElementById('loadingOverlay').style.display='flex';
-  await loadData();
+  var result=await fetchSheetData();
+  document.getElementById('loadingOverlay').style.display='none';
+  var src=result.source==='live'?'Google Sheets (Live)':'Embedded Data';
+  _dataStatusText=src+' | '+result.time;
+  document.getElementById('dataStatus').textContent=_dataStatusText;
+  render();
 }
 
 // ==========================================

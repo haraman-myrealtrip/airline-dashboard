@@ -222,7 +222,7 @@ td{padding:11px 16px}
 </div>
 
 <!-- Airline Select Page -->
-<div id="airlineSelectPage">
+<div id="airlineSelectPage" style="display:none">
   <div class="asp-header">
     <div class="asp-topbar">
       <div class="user-info" id="selectPageUser">
@@ -716,13 +716,23 @@ async function fetchSheetData(){
 var _dataLoaded=false;
 var _dataStatusText='';
 async function loadData(){
-  var result=await fetchSheetData();
-  document.getElementById('loadingOverlay').style.display='none';
-  var src=result.source==='live'?'Google Sheets (Live)':'Embedded Data';
-  _dataStatusText=src+' | '+result.time;
-  _dataLoaded=true;
-  document.getElementById('airlineSelectPage').style.display='block';
-  renderAirlineSelectPage();
+  try{
+    var result=await fetchSheetData();
+    document.getElementById('loadingOverlay').style.display='none';
+    var src=result.source==='live'?'Google Sheets (Live)':'Embedded Data';
+    _dataStatusText=src+' | '+result.time;
+    _dataLoaded=true;
+    document.getElementById('airlineSelectPage').style.display='block';
+    renderAirlineSelectPage();
+  }catch(e){
+    console.error('loadData error:',e);
+    document.getElementById('loadingOverlay').style.display='none';
+    // Fallback: show select page anyway with embedded data
+    MONTHLY=FALLBACK_MONTHLY;ROUTES=FALLBACK_ROUTES;MKT=FALLBACK_MKT;
+    _dataLoaded=true;
+    document.getElementById('airlineSelectPage').style.display='block';
+    renderAirlineSelectPage();
+  }
 }
 
 async function refreshData(){

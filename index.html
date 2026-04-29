@@ -1125,4 +1125,12 @@ function hideTooltip(){
   if(tooltipEl) tooltipEl.style.opacity = '0';
 }
 function ttMom(cur, prev){
- 
+  if(!prev || prev === 0) return cur > 0 ? '<span class="tt-new">NEW</span>' : '—';
+  var ch = ((cur - prev) / prev * 100).toFixed(1);
+  if(ch >= 0) return '<span class="tt-up">+' + ch + '%</span>';
+  return '<span class="tt-down">' + ch + '%</span>';
+}
+window.onload=function(){initTooltip();initAuth()};
+</script>
+</body>
+</html>
